@@ -1,0 +1,7 @@
+# dsh-plugin-xefg-think bundle patch: one opt-in dual-half plugin.
+# The host half serves /xefg-think/state and, only while enabled, contributes
+# the xefg:protocol system-prompt section plus the xefg_frame / xefg_verify
+# tools. The client half renders the header pill that flips it.
+- insert:
+    - id: xefg-think
+      name: 'dsh-plugin-xefg-think'

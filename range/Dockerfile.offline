@@ -1,0 +1,30 @@
+FROM debian:bookworm
+
+# Offline build: no apt at all. The container network cannot reach a package
+# mirror, so socat (a Debian bookworm build pulled from the host's repo) plus
+# its libs and the 32-bit loader/libc are copied in as payload.
+#
+# Debian 12 uses a merged /usr: /lib is a symlink to usr/lib. COPYing a
+# directory onto /lib replaces that symlink with a real directory and breaks
+# /lib64/ld-linux-x86-64.so.2, so every destination here is explicit and the
+# 32-bit loader lands in /usr/lib, which /lib/ld-linux.so.2 resolves to.
+COPY payload/usr/bin/socat /usr/bin/socat
+COPY payload/x86_64-linux-gnu/ /usr/lib/x86_64-linux-gnu/
+COPY payload/usr/lib/x86_64-linux-gnu/ /usr/lib/x86_64-linux-gnu/
+COPY payload/ld-linux32.so.2 /usr/lib/ld-linux.so.2
+COPY payload/lib32/ /lib32/
+
+WORKDIR /chals
+COPY chals/ /chals/
+COPY entry.sh /entry.sh
+
+RUN chmod 0755 /usr/bin/socat /entry.sh \
+ && find /chals -type f -exec chmod 0755 {} \; \
+ && printf 'XEFG{unset}\n' > /flag && chmod 0644 /flag
+
+ENV PORT=10000
+ENV BIN=/chals/a1/pwn
+ENV SOCAT_OPTS=pty,rawer
+
+EXPOSE 10000-10020
+ENTRYPOINT ["/entry.sh"]

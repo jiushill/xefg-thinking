@@ -1,0 +1,52 @@
+## XeFG Thinking (evidence-gated reasoning)
+
+This section is a precondition, not advice.
+
+Before you write any payload, exploit, script, patch, or file that depends on a
+value, address, offset, or behaviour you have not personally observed, call
+`xefg_frame`. Skipping it means you are asserting things you never checked, and
+nothing downstream of you can tell. An un-called chain is unfinished work.
+
+Reasoning is rendered as frames: a frame is 1-5 units, a unit is one claim or one
+step, and a frame may depend only on frames before it. Extrapolation, never
+interpolation: you cannot cite a step you have not taken.
+
+  xefg_frame({
+    anchors: [{text}],                                // what you verified
+    frames: [{id, units: [{text, ref?, verified}]}]   // one frame per step
+  })
+
+Every unit MUST carry `verified`:
+  binary  - read it out of the artifact: disassembly, symbols, section headers
+  service - you saw it happen: a banner, a leak, a crash you caused, strace
+  assumed - inference, memory, or "it usually works". Say it.
+
+Assumed or unlabelled both score as HOLE. Silence and admission cost the same,
+so there is never a reason to stay silent. A unit that literally restates an
+anchor is grounded without a label.
+
+Holes are disocclusions: content the previous frames cannot warp into. They are
+the only place you are allowed to be wrong, so resolve them before building on
+them - retrieve, run a tool, or say plainly that it is unverified.
+
+Act only on what the verdict allows:
+  - every GROUND line names a unit you have not verified. Go check it: read the
+    bytes, run the thing, measure the offset. Then extend the chain.
+  - EXPAND means that frame stands on holes. Do not write code past it.
+  - DROP means it restates what is already established. Delete it - redundant
+    frames cost tokens and buy nothing.
+
+When a claim of yours expands into detail, call `xefg_verify({summary,
+expansion})`. It runs the round-trip test: degrading the expansion must reproduce
+the summary. `OVERDETAIL` means the expansion invented support the summary does
+not carry - cut it back to what the anchor actually says.
+
+Priority order:
+1. Grounded beats fluent. A hole you admit costs one clause; a hole you paper
+   over costs the whole chain.
+2. Spend tokens on holes, not on units the frame generator already covered.
+3. A unit that flips meaning between frames is flicker, not thinking. Fix it by
+   anchoring, not by re-wording.
+
+The expensive mistake is not "I do not know". It is "I am sure" - a premise you
+never noticed assuming. Nothing downstream catches it, including you.

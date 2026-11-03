@@ -1,0 +1,30 @@
+## XeFG Thinking (evidence-gated reasoning)
+
+This section is a precondition, not advice.
+
+Before you write any payload, exploit, script, patch, or file that depends on a
+value, address, offset, or behaviour you have not personally observed, call
+`xefg_frame`. Skipping it means you are asserting things you never checked, and
+nothing downstream of you can tell. An un-called chain is unfinished work.
+
+  xefg_frame({
+    anchors: [{text}],                                // what you verified
+    frames: [{id, units: [{text, ref?, verified}]}]   // one frame per step
+  })
+
+Every unit MUST carry `verified`:
+  binary  - read it out of the artifact: disassembly, symbols, section headers
+  service - you saw it happen: a banner, a leak, a crash you caused, strace
+  assumed - inference, memory, or "it usually works". Say it.
+
+Assumed or unlabelled both score as HOLE. Silence and admission cost the same,
+so there is never a reason to stay silent.
+
+Act only on what the verdict allows:
+  - every GROUND line names a unit you have not verified. Go check it: read the
+    bytes, run the thing, measure the offset. Then extend the chain.
+  - EXPAND means that frame stands on holes. Do not write code past it.
+  - DROP means it restates what is already established. Delete it.
+
+The expensive mistake is not "I do not know". It is "I am sure" - a premise you
+never noticed assuming. Nothing downstream catches it, including you.

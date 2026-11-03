@@ -1,0 +1,50 @@
+{
+  "name": "dsh-plugin-xefg-think",
+  "version": "0.1.0",
+  "description": "Frame-generation math (XeSS-FG / ExtraSS extrapolation) transplanted into reasoning: disocclusion-gated verification, warp blending, redundant-frame dropping, and an elaboration round-trip test. Opt-in, zero cost while disabled.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "immediately": true
+    }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "reasoning",
+    "frame-generation",
+    "xefg",
+    "test-time-compute"
+  ],
+  "license": "MIT"
+}
