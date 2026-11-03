@@ -123,6 +123,57 @@ experiment/      REPORT.md (all four rounds in detail), protocol variants,
                  and every submitted exploit as reproducibility evidence
 ```
 
+## Install
+
+Requirements: **DSH Desktop** (the harness this plugin plugs into) on Windows, and
+PowerShell. No npm registry entry — it is hand-installed by a script.
+
+```powershell
+git clone https://github.com/jiushill/xefg-thinking.git
+cd xefg-thinking\plugin
+
+# copy the package into the live DSH web profile, register it as a bundle,
+# and remove any stale patch insert (the two mechanisms would collide)
+.\install.ps1
+
+# restart DSH Desktop once, then check the host half is live:
+Show-Xefg     # this helper lives in ..\tools\toggle.ps1, dot-source it first
+```
+
+`install.ps1` auto-detects the profile at `%APPDATA%\DSH Desktop\profiles\web`
+(falling back to `~\.dsh\profiles\web`), or takes an explicit `-ProfileDir`.
+It is idempotent, and `-Uninstall` removes every hook.
+
+Verify after restart — the local route should answer and report the build:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3080/xefg-think/state |
+  Format-List enabled, version, engine, protocolChars
+# enabled: False   version: 0.1.5   engine: 0.1.3   protocolChars: 2596
+```
+
+Drive it with the helpers in `tools/`:
+
+```powershell
+. .\tools\toggle.ps1
+Show-Xefg                                        # state + counters
+Set-Xefg -Enabled $true  -Gear default           # turn on (evidence gate: default-deny)
+Set-Xefg -Enabled $true  -Gear gateoff           # ablation: geometry only
+Set-Xefg -Enabled $false
+Set-XefgProtocol -Path .\experiment\protocol-v1.txt   # hot-swap text, no restart
+Clear-XefgProtocol
+```
+
+## Troubleshooting
+
+| symptom | cause / fix |
+|---|---|
+| `GET /xefg-think/state` returns 404 | the profile has not been composed yet — restart DSH Desktop |
+| pill missing | it lives in the **composer row** (it shows on the landing page too), not the session header |
+| pill present but the panel is see-through | pre-0.1.5 CSS used a theme token that is not defined at that DOM position; 0.1.5 paints an opaque base |
+| plugin listed with a bad badge under *Settings → Plugins* | bundle composition failed; fall back with `.\install.ps1 -LegacyInsert` |
+| the model never calls the tools | expected — see the conclusion above; you have to ask for it |
+
 ## Using the plugin
 
 It installs into a DSH web profile as a bundle and shows up under
