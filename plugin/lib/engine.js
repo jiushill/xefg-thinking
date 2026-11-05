@@ -47,6 +47,10 @@ export const DEFAULTS = Object.freeze({
   // 'assumed' is an ungrounded assertion and becomes a hole. 'warn' reports it
   // without escalating; 'off' restores the pre-evidence behaviour (ablation).
   evidenceGate: 'hole',
+  // Prompt section order. dsh-system-prompt bands end at 10200
+  // (DEPLOYMENT_PERSONA_SUFFIX); above that this block is a trailing appendix
+  // rather than an amendment landing inside a preset's own prompt.
+  sectionOrder: 10300,
   maxRefDepth: 3, // how many previous frames blend into one target frame
 })
 

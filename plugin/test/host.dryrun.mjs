@@ -83,8 +83,27 @@ test('disabled plugin contributes no prompt text and no tools', () => {
   assert.equal(m.tools.size, 0, 'nothing may be registered while disabled')
   assert.equal(m.sections.length, 1, 'the section is registered but renders empty')
   assert.equal(m.sections[0].text(), '')
-  assert.equal(m.sections[0].order, 150)
+  // Above dsh-system-prompt's last band (DEPLOYMENT_PERSONA_SUFFIX = 10200), so
+  // the block reads as a trailing appendix instead of splitting a preset's own
+  // prompt in half.
+  assert.equal(m.sections[0].order, 10300)
+  assert.ok(m.sections[0].order > 10200, 'must sort after every built-in band')
   assert.ok(m.routes.has('/xefg-think/state'))
+})
+
+test('the section can be re-ordered without a restart', async () => {
+  const m = mockCtx()
+  apply(m.ctx, {})
+  const before = m.sections.length
+  const { req, res } = fakeReqRes('POST', { params: { sectionOrder: 400 } })
+  await m.routes.get('/xefg-think/state').handler(req, res)
+  assert.equal(res.payload.params.sectionOrder, 400)
+
+  // A section's order is fixed at registration, so moving it means the old one
+  // is disposed and a new one registered: one more entry in the mock's log, and
+  // the newest one carries the new order.
+  assert.ok(m.sections.length > before, 're-registration must have happened')
+  assert.equal(m.sections[m.sections.length - 1].order, 400)
 })
 
 test('the state route enables the protocol and installs both tools', async () => {

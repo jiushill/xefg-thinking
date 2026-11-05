@@ -1,0 +1,14 @@
+## XeFG Thinking (brief)
+
+Before you write anything that depends on a value, address, offset or behaviour
+you have not personally observed, call `xefg_frame` with your chain:
+
+  anchors: [{text}]                                   // what you verified
+  frames:  [{id, units: [{text, ref?, verified}]}]    // one frame per step
+
+`verified` is `binary` (read out of the artifact), `service` (observed live) or
+`assumed` (inference or unchecked). Assumed or missing both score as a hole, so
+silence buys nothing.
+
+Go verify every GROUND line before you build past it. EXPAND means that frame
+stands on holes. DROP means it restates what is already established - delete it.

@@ -19,10 +19,11 @@ import { DEFAULTS, ENGINE_VERSION, analyseChain, renderFrameReport, renderVerify
 export const name = 'xefg-think'
 export const inject = ['webServer']
 
-const VERSION = '0.1.5'
+const VERSION = '0.1.6'
 const NS = 'xefg-think'
 
-const TUNABLE = ['tauFlow', 'tauRoundTrip', 'tauSupport', 'beta', 'holeMax', 'tauRedundant', 'redundantMax', 'maxRefDepth']
+const TUNABLE = ['tauFlow', 'tauRoundTrip', 'tauSupport', 'beta', 'holeMax', 'tauRedundant', 'redundantMax', 'maxRefDepth', 'sectionOrder']
+const TUNABLE_INT = ['maxRefDepth', 'sectionOrder']
 const TUNABLE_BOOL = ['weakAsHole']
 const EVIDENCE_GATES = ['hole', 'warn', 'off']
 
@@ -63,6 +64,7 @@ class StateStore {
         weakAsHole: DEFAULTS.weakAsHole,
         evidenceGate: DEFAULTS.evidenceGate,
         maxRefDepth: DEFAULTS.maxRefDepth,
+        sectionOrder: DEFAULTS.sectionOrder,
       },
       stats: {
         calls: 0,
@@ -120,6 +122,7 @@ class StateStore {
   }
 
   update(patch = {}) {
+    const prev = this.state
     const next = { ...this.state, params: { ...this.state.params }, stats: { ...this.state.stats } }
     if (typeof patch.enabled === 'boolean') next.enabled = patch.enabled
     // '' clears the override and falls back to the built-in protocol.
@@ -130,7 +133,7 @@ class StateStore {
     this.#persist()
     for (const fn of this.listeners) {
       try {
-        fn(next)
+        fn(next, prev)
       } catch {
         /* listener isolation */
       }
@@ -177,12 +180,13 @@ function sanitizeParams(input) {
     tauRedundant: [0.3, 0.99],
     redundantMax: [0.01, 1],
     maxRefDepth: [1, 8],
+    sectionOrder: [200, 20000],
   }
   for (const k of TUNABLE) {
     const v = input[k]
     if (typeof v !== 'number' || !Number.isFinite(v)) continue
     const [lo, hi] = bounds[k]
-    out[k] = k === 'maxRefDepth' ? Math.round(clamp(v, lo, hi)) : clamp(v, lo, hi)
+    out[k] = TUNABLE_INT.includes(k) ? Math.round(clamp(v, lo, hi)) : clamp(v, lo, hi)
   }
   for (const k of TUNABLE_BOOL) {
     if (typeof input[k] === 'boolean') out[k] = input[k]
@@ -456,19 +460,46 @@ export function apply(ctx, config = {}) {
   )
 
   // --- prompt section: dynamic, empty unless enabled
+  //
+  // Order matters more than it looks. dsh-system-prompt sorts sections
+  // ascending and its own bands end at DEPLOYMENT_PERSONA_SUFFIX = 10200, so
+  // anything below that lands *inside* the prompt a preset authored and reads
+  // as an amendment to its persona. Sitting above 10200 makes this block a
+  // trailing appendix instead: the persona stays the identity, and this is a
+  // methodology note after it. The order is state-tunable so placement can be
+  // changed with a POST rather than a restart — a section's order is fixed at
+  // registration, so moving it means dispose + re-register.
   ctx.inject(['systemPrompt'], (c) => {
+    let dispose = null
+    const register = () => {
+      dispose = c.systemPrompt.section({
+        name: 'xefg:protocol',
+        order: store.get().params.sectionOrder,
+        text: () => {
+          const s = store.get()
+          if (!s.enabled) return ''
+          return s.protocol || PROTOCOL
+        },
+      })
+    }
+    register()
     c.effect(
       () =>
-        c.systemPrompt.section({
-          name: 'xefg:protocol',
-          order: 150,
-          text: () => {
-            const s = store.get()
-            if (!s.enabled) return ''
-            return s.protocol || PROTOCOL
-          },
+        store.onChange((next, prev) => {
+          if (!prev || !next) return
+          if (next.params.sectionOrder === prev.params.sectionOrder) return
+          const old = dispose
+          dispose = null
+          if (typeof old === 'function') {
+            try {
+              old()
+            } catch {
+              /* already disposed by a reload */
+            }
+          }
+          register()
         }),
-      'xefg-think: protocol section'
+      'xefg-think: protocol section order follows the setting'
     )
   })
 

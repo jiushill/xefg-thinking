@@ -48,6 +48,34 @@ Token cost of a disabled plugin is exactly zero.
 State lives in `%APPDATA%\DSH Desktop\xefg-think\state.json` (or `$DSH_HOME`),
 so it survives restarts.
 
+**Where the section sits.** `dsh-system-prompt` sorts sections ascending, and its
+own bands end at `DEPLOYMENT_PERSONA_SUFFIX = 10200`:
+
+```
+HARNESS_IDENTITY            -1000
+DEPLOYMENT_PERSONA_PREFIX       0   <- an agent preset's persona lands here
+PLAN_POLICY / TEAM / PTC    500-800
+WEB_SURFACE                 10100
+DEPLOYMENT_PERSONA_SUFFIX   10200   <- the last thing a preset authored
+```
+
+This plugin's section defaults to **10300**, i.e. *after* every built-in band, so
+it reads as a trailing appendix instead of landing in the middle of a preset's
+own prompt. A section's order is fixed at registration time, so it is a state
+field (`params.sectionOrder`, 200–20000) and changing it disposes and
+re-registers the section — no restart:
+
+```
+POST /xefg-think/state  {"params": {"sectionOrder": 150}}
+```
+
+Below 10200 the block is interleaved with persona/tool guidance, which is what
+made a custom ops preset ("Hermes Ops / V2Board Campaign") stop behaving: a
+2596-character block opening with *"this is a precondition, not advice"* sitting
+right after the persona reads as an amendment to the identity. Two mitigations
+ship with it — the order above, and `vm/protocol-short.txt`, a ~500-character
+version that carries only the instruction and none of the argument.
+
 ---
 
 ## 2. The mapping
